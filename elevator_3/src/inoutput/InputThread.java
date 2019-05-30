@@ -22,18 +22,14 @@ public class InputThread extends Thread {
         ElevatorInput elevatorInput = new ElevatorInput(System.in);
         while (true) {
             PersonRequest personRequest = elevatorInput.nextPersonRequest();
-            synchronized (queue) {
-                if (personRequest == null) {
-                    end.setNull(true);
-                    queue.notifyAll();
-                    break;
-                } else {
-                    Request request = new Request(personRequest.getPersonId(),
-                            personRequest.getFromFloor(),
-                            personRequest.getToFloor());
-                    queue.addRequest(request);
-                    queue.notifyAll();
-                }
+            if (personRequest == null) {
+                end.setNull(true);
+                break;
+            } else {
+                Request request = new Request(personRequest.getPersonId(),
+                        personRequest.getFromFloor(),
+                        personRequest.getToFloor());
+                queue.addRequest(request);
             }
         }
         try {

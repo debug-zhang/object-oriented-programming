@@ -9,7 +9,7 @@ public class RequestQueue {
         this.queue = new Vector<>();
     }
 
-    public boolean isEmpty() {
+    public synchronized boolean isEmpty() {
         return queue.isEmpty();
     }
 

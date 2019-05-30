@@ -80,18 +80,15 @@ public class SchedulerThread extends Thread {
         int from;
         int to;
         while (end.notEnd()) {
-            synchronized (queue) {
-                while (queue.isEmpty()) {
-                    try {
-                        queue.wait();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
+            while (queue.isEmpty() && end.notEnd()) {
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
 
-            while (!queue.isEmpty() && (queueA.size() < 5
-                    || queueB.size() < 7 || queueC.size() < 6)) {
+            while (!queue.isEmpty()) {
                 r = queue.getFirst();
                 from = r.getFrom();
                 to = r.getTo();
