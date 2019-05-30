@@ -277,10 +277,14 @@ public class TestMain {
 ## 其他
 
 * 本次作业接口下载地址：[下载地址](https://oo-public-1258540306.cos.ap-beijing.myqcloud.com/homeworks/specs_2/specs-homework-2-1.2-raw-jar-with-dependencies.jar)
+
 * 本次作业依然在输出层面上分为加密版和非加密版
   * 非加密版完全公开
   * 加密版只在评测机上使用且闭源，会对输出进行一定程度的加密处理
     * <del>所以，请不要试图伪造输出，还请使用我们的接口</del>
     * 不仅如此，加密版本次编译时加入了源码混淆选项，所有非public的字段、方法、类以及方法实现都会被混淆。
     * <del>所以，请不要试图通过反射来破解接口</del>。互测时发现此类情况，也可以直接举报。
+  
 * 特别提醒注意：**本次作业使用的接口，所处的包为`com.oocourse.specs2`，和上次有所不同，请各位注意一定不要用混了**。
+
+  
