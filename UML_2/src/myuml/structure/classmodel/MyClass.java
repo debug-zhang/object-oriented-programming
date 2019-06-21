@@ -209,10 +209,12 @@ public class MyClass {
     }
 
     public void checkUml002() {
-        HashSet<UmlElement> set = Relation.getAssociationEndById(getId());
-        for (UmlElement e : set) {
-            if (attributeNameMap.containsKey(e.getName())) {
-                UmlRule.addUml002(e.getName(), getName());
+        if (Relation.hasAssoication(getId())) {
+            HashSet<UmlElement> set = Relation.getAssociationEndById(getId());
+            for (UmlElement e : set) {
+                if (attributeNameMap.containsKey(e.getName())) {
+                    UmlRule.addUml002(e.getName(), getName());
+                }
             }
         }
     }
