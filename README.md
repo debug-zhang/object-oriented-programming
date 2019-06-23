@@ -1343,4 +1343,383 @@ graph = undigraph.getGraph();
 
 　　长远看来，规格化编程是一项非常重要的能力，它在现今程序越来越复杂、参与人员越来越多、各种开源项目层出不穷的时代，它的需求会越来越大，所以我们必须提高自己对规格的理解程度。
 
-###  
+### 
+
+# UML
+
+# 一、三次作业简单介绍
+
+### 第十三次作业：
+
+实现一个 **UML** 类图解析器 **UmlInteraction**
+
+本次作业最终需要实现一个UML类图解析器，可以通过输入各种指令来进行类图有关信息的查询。
+
+实现指令：
+
+| **模型中一共有多少个类**   | **CLASS_COUNT**                                     |
+| -------------------------- | --------------------------------------------------- |
+| **类中的操作有多少个**     | **CLASS_OPERATION_COUNT classname mode**            |
+| **类中的属性有多少个**     | **CLASS_ATTR_COUNT classname mode**                 |
+| **类有几个关联**           | **CLASS_ASSO_COUNT classname**                      |
+| **类的关联的对端是哪些类** | **CLASS_ASSO_CLASS_LIST classname**                 |
+| **类的操作可见性**         | **CLASS_OPERATION_VISIBILITY classname methodname** |
+| **类的属性可见性**         | **CLASS_ATTR_VISIBILITY classname attrname**        |
+| **类的顶级父类**           | **CLASS_TOP_BASE classname**                        |
+| **类实现的全部接口**       | **CLASS_IMPLEMENT_INTERFACE_LIST classname**        |
+| **类是否违背信息隐藏原则** | **CLASS_INFO_HIDDEN classname**                     |
+
+### 第十四次作业：
+
+在上次作业基础上，扩展解析器，使得能够支持对 **UML** 顺序图和 **UML** 状态图的解析，并能够支持几个基本规则的验证。
+
+实现指令：
+
+| **给定状态机模型中一共有多少个状态**                         | **STATE_COUNT statemachine_name**                        |
+| ------------------------------------------------------------ | -------------------------------------------------------- |
+| **给定状态机模型中一共有多少个迁移**                         | **TRANSITION_COUNT statemachine_name**                   |
+| **给定状态机模型和其中的一个状态，有多少个不同的后继状态**   | **SUBSEQUENT_STATE_COUNT statemachine_name statename**   |
+| **给定UML顺序图，一共有多少个参与对象**                      | **PTCP_OBJ_COUNT umlinteraction_name**                   |
+| **给定UML顺序图，一共有多少个交互消息**                      | **MESSAGE_COUNT umlinteraction_name**                    |
+| **给定UML顺序图和参与对象，有多少个incoming消息**            | **INCOMING_MSG_COUNT umlinteraction_name lifeline_name** |
+| **R001：针对下面给定的模型元素容器，不能含有重名的成员(UML002)** |                                                          |
+| **R002：不能有循环继承(UML008)**                             |                                                          |
+| **R003：任何一个类或接口不能重复继承另外一个接口(UML009)**   |                                                          |
+
+### 关键点 1 —— UML 规则：
+
+准确理解 **UML** 规则，然后使用 **Java** 来实现相应的接口。
+
+### 关键点 2 —— 架构设计：
+
+　　第一次作业和第二次作业紧密相关，要考虑好可扩展性。
+
+
+
+# 二、两次次作业的类图与度量分析
+
+**度量分析标识：**
+
+- - ev(G)　　本质复杂度
+  - iv(G)　　 设计复杂度
+  - v(G)　　 循环复杂度
+  - OCavg　 平均方法复杂度
+  - OSavg　 平均方法语句数（规模）
+  - WMC　　加权方法复杂度
+  - v(G)avg　平均循环复杂度
+  - v(G)tot　总循环复杂度
+
+ 
+
+## 第十三次作业：
+
+### 1、架构构思：
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623145226205-1283509523.jpg)
+
+
+
+　　第一次作业主要是继承 **UmlInteraction** 接口，实现相应的方法。
+
+　　我的设计是首先在 **MyUmlInteraction** 进行构造，读取所有的元素，然后在 **Find** 里用 **HashMap** 进行存储， **MyAssociation** 、 **MyInterfaceRealition** 和 **MyGeneralization** 等直接查找好相应的类和接口，直接保存，方便查找。
+
+　　同时在 **Cahce** 里设置缓存，记录重复信息和每次查询后结果的存储，保证不做重复查找，提高效率。
+**Realiton** 负责继承、接口实现、关联这些关系的存储。
+
+　　然后 **MyUmlInteraction** 中的每条指令都归类到相应的结构中，互不影响，例如：
+
+| **getClassOperationCount**      | Find.getClassByName(className).getOperationCount(queryType)** |
+| ------------------------------- | ------------------------------------------------------------ |
+| **getClassAttributeCount**      | **Find.getClassByName(className).getAttributeSize()**        |
+| **getClassOperationVisibility** | **Find.getClassByName(className).getOperationVisibility(         operationName)** |
+| **getTopParentClass**           | **Find.getClassByName(className).getTopFatherName()**        |
+
+　　其中 **Find.getClassByName(className)** 得到是 **MyClass** ，在这个类中包含相应的属性：
+
+```java
+private UmlClass umlClass;
+private HashMap<String, UmlAttribute> attributeNameMap;   
+private HashMap<String, MyOperation> operationIdMap;    
+private HashMap<OperationQueryType, Integer> operaCountMap;
+private HashMap<String, HashMap<Visibility, Integer>> operaVisiMap;
+private LinkedList<MyClass> fatherList;
+private LinkedList<AttributeClassInformation> attributeInformationList;
+private HashSet<String> interfaceIdSet;
+private int assoicationCount;
+private HashSet<String> assoicationIdSet;
+```
+
+			类似的， **MyInterface** 和 **MyOperation** 也是一样。
+
+### 2、项目分析：
+
+类图分析：
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623145644462-2104590107.jpg)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623150345998-194133097.jpg)
+
+
+度量分析：
+
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623145614767-95729154.png)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623150431055-1343824520.png)
+
+
+
+### 3、自我总结：
+
+　　从 **Metrics** 的分析来看，这次作业的复杂度飘红是在 **MyUmlInteraction.buildMap** 和 **MyAssociation.add** 。
+　　**MyUmlInteraction.buildMap** 是构造函数的一部分，我用了一个 **for** 和 **switch** 结构进行分类，提高了复杂度。
+
+
+```java
+for (UmlElement uml : elements) {
+    Find.addId(uml);
+    switch (uml.getElementType()) {
+        case UML_CLASS:
+            Find.addClass(uml);
+            break;
+        case UML_INTERFACE:
+            Find.addInterfaceId(uml);
+            break;
+        case UML_GENERALIZATION:
+            generalizationList.add((UmlGeneralization) uml);
+            break;
+        case UML_INTERFACE_REALIZATION:
+            Relation.addInterfaceRealition(uml);
+            break;
+        case UML_OPERATION:
+            operationMap.put(uml.getId(), new MyOperation(uml));
+            break;
+        case UML_ATTRIBUTE:
+            attributeList.add((UmlAttribute) uml);
+            break;
+        case UML_PARAMETER:
+            parameterList.add((UmlParameter) uml);
+            break;
+        case UML_ASSOCIATION:
+            associationList.add((UmlAssociation) uml);
+            break;
+        default:
+            break;
+    }
+}
+```
+
+　　而 **MyAssociation.add** 是因为我分别判断了两个 **End** 相同和不同的情况，每个情况又去添加相应的元素。
+
+
+```java
+if (!contains(id1)) {
+            associationEnd.put(id1, new HashSet<>());
+        }
+        associationEnd.get(id1).add(Find.getById(a.getEnd2()));
+        if (!contains(id2)) {
+            associationEnd.put(id2, new HashSet<>());
+        }
+        associationEnd.get(id2).add(Find.getById(a.getEnd1()));
+        if (id1.equals(id2)) {
+            if (Find.containsClassId(id1)) {
+                if (!containsClass(id1)) {
+                    associationClass.put(id1, new HashSet<>());
+                }
+                associationClass.get(id1).add(id1);
+            }
+        } else {
+            if (Find.containsClassId(id1) && Find.containsClassId(id2)) {
+                if (!containsClass(id1)) {
+                    associationClass.put(id1, new HashSet<>());
+                }
+                associationClass.get(id1).add(id2);
+                if (!containsClass(id2)) {
+                    associationClass.put(id2, new HashSet<>());
+                }
+                associationClass.get(id2).add(id1);
+            }
+        }
+```
+
+
+　　其他方法的复杂度都得到了有效的控制。
+
+ 
+
+### 4、程序 **bug** 分析：
+
+　　这次出现了一个 **bug**，是因为我在存储 **class** 的时候，直接将同名的 **class** 覆盖了，导致当查询子类继承父类的属性时，查找到的那个类不是它真正的父类，后来我改为用 **id** 查找就消除了这个 **bug**。
+
+
+
+
+## 第十四次作业：
+
+### 1、架构构思：
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623150721447-1619784900.jpg)
+
+
+
+　　本次作业是在上次作业的基础上进行扩展，**UmlGeneralInteraction** 接口继承了四个接口，分别是 **UmlClassModelInteraction, UmlStandardPreCheck, UmlCollaborationInteraction, UmlStateChartInteraction**。我将它们分别继承，实现各种的功能后再进行整合，其中：
+　　**UmlClassModelInteraction** 放入 **classmodel**包中，该包即上次作业的结构。
+　　**UmlStandardPreCheck**也放入 **classmodel**，并为它设置相应的 **function**，即 **UmlRule**。
+　　**UmlCollaborationInteraction** 和 **UmlStateChartInteraction** 分别放入新包 **collaboration** 和 **statechart** 中，并与上次作业相同，将方法归到各种的结构中，直接调用相应结构的方法。
+
+ 
+
+### 2、项目分析：
+
+类图分析：
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623151247400-1879971382.jpg)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623151256379-1840459385.jpg)
+
+
+
+度量分析：
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623151358467-561628753.png)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623151430011-65506831.png)
+
+ 
+
+### 3、自我总结：
+
+　　这次作业中的飘红主要是 **UmlRule.checkClass**、**UmlRule.checkCycle**、**MyUmlGeneralInteraction.classify**，其中 **MyUmlGeneralInteraction.classify** 就是上次的 **for** 和 **switch** 结构。
+　　**UmlRule.checkClass** 是被 **UmlRule.checkCycle** 调用的，他们复制的是 **R002：不能有循环继承(UML008)**：
+
+
+```java
+public static void checkCycle(boolean isFirst, String fatherId, String id) {
+    if (!isFirst) {
+        if (fatherId.equals(id)) {
+            addUml008(fatherId);
+            return;
+        } else {
+            visitedSet.add(id);
+        }
+    }
+
+    if (Find.containsClassId(id) && Relation.hasGeneralization(id)) {
+        String nextId = Relation.getClassFather(id).getId();
+        if (!visitedSet.contains(nextId)) {
+            checkCycle(false, fatherId, nextId);
+        }
+    }
+    if (Find.containsInterfaceId(id) && Relation.hasGeneralization(id)) {
+        for (String nextId : Relation.getInterfaceFather(id)) {
+            if (!visitedSet.contains(nextId)) {
+                checkCycle(false, fatherId, nextId);
+            }
+        }
+    }
+}
+```
+
+
+```java
+private static boolean checkClass(String id, HashSet<String> idSet) {
+        if (idSet.contains(id) || containsUml009Id(id)) {
+            return true;
+        } else {
+            idSet.add(id);
+        }
+        if (Relation.hasGeneralization(id)) {
+            for (String tempId : Relation.getInterfaceFather(id)) {
+                if (idSet.contains(tempId) || containsUml009Id(id)) {
+                    return true;
+                } else {
+                    idSet.add(tempId);
+                }
+            }
+        }
+        return false;
+    }
+```
+
+
+
+### 4、程序 bug 分析：
+　　这次的 **bug** 我非常难受，我在实现 **R001：针对下面给定的模型元素容器，不能含有重名的成员(UML002)** 时，在检查关联是，忘记了首先判断该类是否有关联，即：
+
+```java
+if (Relation.hasAssoication(getId())) {
+    HashSet<UmlElement> set = Relation.getAssociationEndById(getId());
+    for (UmlElement e : set) {
+        if (attributeNameMap.containsKey(e.getName())) {
+            UmlRule.addUml002(e.getName(), getName());
+        }
+    }
+}
+```
+　　这个方法我之前忘加了前面的 **if**，导致强测非常惨烈，实在难受。
+
+
+
+
+# 三、架构设计及OO方法理解的演进  
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154218621-1774751753.jpg)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154237975-1803744591.jpg)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154244116-453316002.jpg)
+
+　　第一单元是我第一次接触面向对象程序设计，也是这个学期的起步，我各方面的认识都很不到尾，还是有着很深的面向过程编程的影子。
+　　这其中经历了一次讨论课，一次优秀代码的展示后，我接触到了很多大佬的思维方式，开始深刻理解静态方法的使用，继承和接口实现的使用，对建类和方法设计的思考，慢慢摸索到一些方向。
+　　所以在第三次作业中将这些技巧都尝试了一下，包括 **Error** 类的静态方法归类， **factor**包中抽象类的实现和继承，虽然架构设计的问题还是有很多，但相比前两次作业已经好了不少。
+
+
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154250360-27301278.jpg)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154257061-477590277.jpg)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154305721-2086920893.jpg)
+
+　　第二单元是我这个学期面临困难最大的一个单元，即对多线程的理解。
+　　这个单元的前两次作业都还算平缓，但第三次作业直接让我的架构血崩，前两次作业的可扩展性极差，让我的第三次作业不断修修补补，在屎山上不断补坑，极其难受。
+　　这个单元让我认识到，我对架构设计的理解还有非常大的问题，程序的可扩展性是一个非常重要的问题，我们需要在这一次作业的设计时为未来的变化留下足够便利的扩展空间，同时这也是架构本身的问题，一个优秀的架构应该没有极强的耦合，让我们可以方便的修改。
+
+
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154311052-884369429.jpg)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154321606-2098451150.jpg)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154331067-382570228.jpg)
+
+　　第三单元是我这个学期失分最严重的一个单一，第二次作业仅仅得了10分。
+　　这个单元我吸取了前两个单元的教训，做好了可扩展性，下一次作业都继承了上一次作业的类。
+　　但是我却没做好测试，导致一些隐蔽的 **bug** 没有被查出来，强测惨不忍睹。
+　　无论哪次作业，测试一定是重中之重，否则只能自己哭泣。
+
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154338764-1574958685.jpg)
+![](https://img2018.cnblogs.com/blog/1425766/201906/1425766-20190623154344719-2069580870.jpg)
+
+　　第四单元是我这个学期的最后一个单元，我自我认为我的架构设计相比开学已经有了很大的进步，虽然还是存在很多问题。
+　　这个单元的每个类、每个方法都做到了精简与专一，保证每个类、每个方法只做自己该做的事情。同时在第二次作业的扩展时，不需要对第一次的需求做出改变，只需要不断添加新方法，保证了扩展的便利性。
+　　然而，测试依然不够全面，如同我在前面说的，因为一个 **if** 的缺失，让我的强测再次血崩。测试的充分性不仅仅是数据的量和复杂程度，更要考虑所有的情况。
+
+
+# 四、四个单元中测试理解与实践的演进
+　　第一单元，因为程序本身没有太多技巧，前两次作业主要靠肉眼找 **bug**，瞄准事故多发地段正则表达式猛烈攻击。第三次作业使用自动评测机，不断暴力生成。这个单元前两次作业我没有出现 **bug**，第三次作业因为程序比较庞大，一些地方没有顾忌到，导致强测出现了问题。
+　　第二单元，因为引入多线程，调试难度加大，加上数据不好生成，我几乎没有做额外测试。我选择的方法是用这一次的程序提交到上一次作业的 **bug** 修复，不断回滚。这样依然有很多问题，比如第三次作业仍然需要肉眼判断，同时难以找出 **bug**。这个单元我没有出现 **bug**，但是我第三次作业爆了一半的 **CTLE**，这是架构不合理导致的无法轻易修复的问题，只能重构。
+　　第三单元，是我本学期 **bug** 最多的一个单元。这个单元的完成其实不难，但是也有可能是因为这样，我忽视了大面积的测试，导致一些隐蔽的 **bug** 没有发现。
+　　第四单元，我在强测前做了很多测试，却只重视了量，没有重视质，忽略了一些边界条件，导致同样出现了一些小 **bug**，然而这些小 **bug** 却造成了非常大的影响，一行代码影响全局，非常难受。
+
+　　四个单元以来，从肉眼 **debug**，到搭建自动评测机评测，再到 **JUnit**、自己手动构造边界条件，这些都让我认识到测试的重要性。测试不全面，亲人两行泪。80%的bug隐藏在20%的代码中；80%的时间用在测试计划、测试设计、测试实现上，20%的时间用于测试执行上；80%的bug通过静态测试发现，20%的bug通过动态测试发现；80%的bug通过人工测试发现，20%的bug通过自动化测试发现。这些二八定律真实的反应了具体的情况。
+
+
+# 五、课程收获
+　　总的来说，这学期非常的累，但是收获也很大。
+　　一方面的收获是成长，作为一名大学才接触编程的学生，我需要学习的地方太多太多。从毫无 **java** 编程基础的小白、无法理解面向对象程序设计的新手，到基本能完成大部分要求，整个过程非常困难，回顾头看看又很有感触。
+　　另一方面的收获是教训，无数次 **bug** 的出现和 **bug** 的修复让我深刻认识到：编程不仔细，亲人两行泪。架构不合理，亲人两行泪。测试不充分，亲人两行泪。偶然间的一个 **bug** 毁所有，一行代码毁人生的感觉，非常糟糕，非常难忘。
+　　这个学期，我收获了如下几点：
+　　基本熟练掌握了 **java**语言的语法和特性；
+　　初步学习了多线程编程，虽然这块我的理解还不到位，但我会继续深入学习的；
+　　学习了面向对象程序设计的思维逻辑；
+　　认识到架构设计的重要性和一些技巧方法；
+　　了解了 **JML** 规格化编程；
+　　了解了 **UML** 建模设计；
+　　深刻理解了测试的重要性，学习到很多测试的方法。
+
+
+# 六、给课程提三个具体改进建议
+　　首先，本学期课程组对 **OO** 课程的改进是巨大的，课程体验要好于往年，在此真诚地感谢各位助教。
+　　我的建议如下：
+　　1、提升中测难度和分数占比或构造测试集池、提供运行时间测试：
+　　这学期的中测更像是弱测，测试点都比较简单。我明白课程组可能有些想让我们自己做更充分测试的意思，但是一方面我们才接触面向对象的设计，个人能力有限，另一方面很多作业的测试不那么好构造，我们自己构造的难度比较大，还有就是关于 **CTLE** 的测试本地和评测机差距比较大。希望明年课程中能提高中测难度和分数占比或构造测试集池、提供运行时间测试。让我们能更好地找出自己的 **bug**，不因为一些小问题而程序爆炸。
+　　2、修改 **Project** 的难度递进，保证指导书质量：
+　　部分 **Project** 的难度递进不太合理，第一次、第二次、第三次的跳跃较大。建议要么缩小差距，提升第一次作业的难度，降低第三次作业的难度。同时合理规划项目时间，尽量避免指导书的修改，可以在本次作业的互测阶段提前开发下一次作业的指导书，让我们有充足的时间去分析指导书的问题，避免指导书的反复修改和我们的理解不清，同时能够减轻因难度增加带来的时间紧张问题。
+　　3、每单元作业结束后及时开放标程和优秀作业：
+　　即便通过了三次作业，还是存在很多的问题，还需要大量的学习。从标程和大佬的作业中，能找到很多值得我们学习的地方。有个激进的建议是每次作业结束后发布标程，让我们不断学习，但这样也会造成一些问题，希望课程中能够思考的更加全面吧。
+　　4、理论课：
+　　希望理论课内容能够更加具体一些，有些地方比较空泛，学完仍然没有什么感觉，同时希望给出更多的例子，帮助学习，单独的讲解感触不是特别深。
+　　5、实验课：
+　　还是希望实验课能够在双周，同时希望能够减小实验课分数占比，让我们有更多的机会去学习更多的东西，增加我们的试错机会。
